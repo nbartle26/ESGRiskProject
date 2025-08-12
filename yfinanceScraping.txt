@@ -1,0 +1,68 @@
+import yfinance as yf
+import pandas as pd
+import time
+from urllib.error import HTTPError
+
+ticker = "AAPL"
+company = yf.Ticker(ticker)
+esg_data = company.sustainability
+
+print(esg_data)
+
+url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+sp500_table = pd.read_html(url)[0]
+sp500_tickers = sp500_table[['Symbol', 'Security']]
+sp500_tickers.columns = ['Ticker', 'Company']
+print(sp500_tickers.head())
+
+
+esg_list = []
+failed_tickers = []
+for ticker in sp500_tickers['Ticker']:
+    tries = 0
+    max_tries = 3
+    success = False
+    
+    while tries < max_tries and not success:
+        tries += 1
+        try:
+            company = yf.Ticker(ticker)
+            esg_data = company.sustainability
+            
+            if esg_data is not None:
+                esg_row = esg_data.T
+                esg_row['Ticker'] = ticker
+                esg_list.append(esg_row)
+                print(f"ESG data retrieved for {ticker}")
+            else:
+                print(f"No ESG data for {ticker}")
+            
+            success = True
+            
+        except HTTPError as e:
+            print(f"HTTP Error for {ticker} on try {tries}: {e}")
+            time.sleep(2) 
+        except Exception as e:
+            print(f"Unexpected error for {ticker} on try {tries}: {e}")
+            time.sleep(2)
+    
+    if not success:
+        failed_tickers.append(ticker)
+    
+    time.sleep(0.5)
+
+if esg_list:
+    esg_df = pd.concat(esg_list, ignore_index=True)  #combines all companies into one masterdataframe
+else:
+    esg_df = pd.DataFrame() #adds to empty dataframe if no datas collected
+
+esg_df.to_csv("sp500_esg_scores.csv", index=False)
+print("Finished ESG scraping")
+print(f"Failed tickers: {failed_tickers}")
+
+
+
+
+esg_df = pd.read_csv("sp500_esg_scores.csv")
+print(esg_df.head(10))   #1st 10 rows
+print("Number of companies with ESG data:", len(esg_df['Ticker'].unique()))   #which companies have ESG data
