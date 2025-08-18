@@ -27,4 +27,23 @@ WHERE HighestControversy >= 3
 ORDER BY HighestControversy DESC, TotalESG ASC
 LIMIT 20;
 
-#we want to flag companies involved in our bool columns (animaltesting, coal, alcoholic, etc)
+ALTER TABLE esg_scores
+  ADD COLUMN gics_sector           VARCHAR(64),
+  ADD COLUMN gics_industry_group   VARCHAR(64),
+  ADD COLUMN gics_industry         VARCHAR(64),
+  ADD COLUMN gics_sub_industry     VARCHAR(64);
+CREATE INDEX ix_company_gics 
+ON company_master(gics_sub_industry, gics_industry, gics_industry_group, gics_sector);
+
+CREATE TABLE IF NOT EXISTS materiality_rules (
+  tier ENUM('sub_industry','industry','industry_group','sector') NOT NULL,
+  tier_value VARCHAR(128) NOT NULL,
+  key_issue VARCHAR(64) NOT NULL,     
+  pillar  ENUM('E','S','G') NOT NULL,
+  weight  DECIMAL(6,5) NOT NULL,            -- weights per rule-set should sum to 1
+  UNIQUE KEY (tier, tier_value, key_issue)
+);
+
+ALTER TABLE raw_documents
+  ADD UNIQUE KEY ux_raw_ticker_sha (ticker, sha256);
+

@@ -26,6 +26,6 @@ def main():
     # 5) Compute Exposure_k, ManagedFraction_k, UnmanagedRisk_k; aggregate → pillar + TotalESG; upsert tables
     compute_and_write_scores()
 
-    print("Pipeline complete ✅")
+    print("Pipeline complete sanity check")
 if __name__ == "__main__":
     main()
